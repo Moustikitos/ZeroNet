@@ -15,7 +15,7 @@ PY3 = True if sys.version_info[0] >= 3 else False
 HEX = re.compile("^[0-9a-fA-F]$")
 BHEX = re.compile(b"^[0-9a-fA-F]$")
 
-MARKER = "1e"
+# MARKER = "1e" # darknet
 COMPRESSED = True
 
 
@@ -103,52 +103,18 @@ def getKeys(secret, seed=None):
 	}
 
 
-def getAddress(publicKey):
-	"""
-	Computes ARK address from keyring.
+# def getAddress(publicKey):
+# 	"""
+# 	Computes ARK address from keyring.
 
-	Argument:
-	publicKey (str) -- public key string
+# 	Argument:
+# 	publicKey (str) -- public key string
 
-	Return str
-	"""
-	ripemd160 = hashlib.new('ripemd160', unhexlify(publicKey)).digest()[:20]
-	seed = unhexlify(MARKER) + ripemd160
-	return base58.b58encode_check(seed)
-
-
-def newPrivatekey(uncompressed=False):
-    return getKeys(None, hashlib.sha256(os.urandom(256)).digest())
-
-
-def newSeed():
-    return hexlify(hashlib.sha256(os.urandom(256)).digest())
-
-
-# def hdPrivatekey(seed, child):
-#     masterkey = btctools.bip32_master_key(seed)
-#     childkey = btctools.bip32_ckd(masterkey, child % 100000000)  # Too large child id could cause problems
-#     key = btctools.bip32_extract_key(childkey)
-#     return btctools.encode_privkey(key, "wif")
-
-
-def privatekeyToAddress(privatekey):
-	try:
-		signingKey = SigningKey.from_string(unhexlify(privateKey), SECP256k1, hashlib.sha256)
-		return signingKey.get_verifying_key().to_string()
-		# return getAddress(publicKey)
-	except Exception:
-		return False
-
-
-def sign(data, privatekey):  # Return sign to data using private key
-	signingKey = SigningKey.from_string(unhexlify(privateKey), SECP256k1, hashlib.sha256)
-    return hexlify(signingKey.sign_deterministic(
-		data if isinstance(data, bytes) else data.encode("utf-8"),
-		hashlib.sha256,
-		sigencode=sigencode_der_canonize)
-	)
-signOld = sign
+# 	Return str
+# 	"""
+# 	ripemd160 = hashlib.new('ripemd160', unhexlify(publicKey)).digest()[:20]
+# 	seed = unhexlify(MARKER) + ripemd160
+# 	return base58.b58encode_check(seed)
 
 
 def verifySignature(value, publicKey, signature):
@@ -184,6 +150,44 @@ def verifySignatureFromBytes(data, publicKey, signature):
 	except (BadSignatureError, der.UnexpectedDER):
 		return False
 	return True
+
+
+##############################
+## HERE STARTS THE OVERRIDE ##
+##############################
+
+def newPrivatekey(uncompressed=False):
+	return getKeys(None, hashlib.sha256(os.urandom(256)).digest())
+
+
+def newSeed():
+	return hexlify(hashlib.sha256(os.urandom(256)).digest())
+
+
+# def hdPrivatekey(seed, child):
+#     masterkey = btctools.bip32_master_key(seed)
+#     childkey = btctools.bip32_ckd(masterkey, child % 100000000)  # Too large child id could cause problems
+#     key = btctools.bip32_extract_key(childkey)
+#     return btctools.encode_privkey(key, "wif")
+
+
+def privatekeyToAddress(privatekey):
+	try:
+		signingKey = SigningKey.from_string(unhexlify(privateKey), SECP256k1, hashlib.sha256)
+		return signingKey.get_verifying_key().to_string()
+		# return getAddress(publicKey)
+	except Exception:
+		return False
+
+
+def sign(data, privatekey):
+	signingKey = SigningKey.from_string(unhexlify(privateKey), SECP256k1, hashlib.sha256)
+	return hexlify(signingKey.sign_deterministic(
+		data if isinstance(data, bytes) else data.encode("utf-8"),
+		hashlib.sha256,
+		sigencode=sigencode_der_canonize)
+	)
+signOld = sign
 
 
 def verify(data, address, sign): 
