@@ -5,7 +5,7 @@ import time
 import gevent
 
 import util
-from Crypt import CryptBitcoin
+from Crypt import CryptArk
 from Plugin import PluginManager
 from Config import config
 from util import helper
@@ -16,13 +16,13 @@ class User(object):
     def __init__(self, master_address=None, master_seed=None, data={}):
         if master_seed:
             self.master_seed = master_seed
-            self.master_address = CryptBitcoin.privatekeyToAddress(self.master_seed)
+            self.master_address = CryptArk.privatekeyToAddress(self.master_seed)
         elif master_address:
             self.master_address = master_address
             self.master_seed = data.get("master_seed")
         else:
-            self.master_seed = CryptBitcoin.newSeed()
-            self.master_address = CryptBitcoin.privatekeyToAddress(self.master_seed)
+            self.master_seed = CryptArk.newSeed()
+            self.master_address = CryptArk.privatekeyToAddress(self.master_seed)
         self.sites = data.get("sites", {})
         self.certs = data.get("certs", {})
         self.settings = data.get("settings", {})
@@ -58,9 +58,9 @@ class User(object):
     def generateAuthAddress(self, address):
         s = time.time()
         address_id = self.getAddressAuthIndex(address)  # Convert site address to int
-        auth_privatekey = CryptBitcoin.hdPrivatekey(self.master_seed, address_id)
+        auth_privatekey = CryptArk.hdPrivatekey(self.master_seed, address_id)
         self.sites[address] = {
-            "auth_address": CryptBitcoin.privatekeyToAddress(auth_privatekey),
+            "auth_address": CryptArk.privatekeyToAddress(auth_privatekey),
             "auth_privatekey": auth_privatekey
         }
         self.saveDelayed()
@@ -93,8 +93,8 @@ class User(object):
     def getNewSiteData(self):
         import random
         bip32_index = random.randrange(2 ** 256) % 100000000
-        site_privatekey = CryptBitcoin.hdPrivatekey(self.master_seed, bip32_index)
-        site_address = CryptBitcoin.privatekeyToAddress(site_privatekey)
+        site_privatekey = CryptArk.hdPrivatekey(self.master_seed, bip32_index)
+        site_address = CryptArk.privatekeyToAddress(site_privatekey)
         if site_address in self.sites:
             raise Exception("Random error: site exist!")
         # Save to sites

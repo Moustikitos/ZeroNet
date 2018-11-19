@@ -10,12 +10,13 @@ from lib.ecdsa.curves import SECP256k1
 from lib.ecdsa.keys import SigningKey, VerifyingKey
 from lib.ecdsa.util import sigdecode_der, sigencode_der_canonize
 
+from lib.pybitcointools import bitcoin as btctools
+
 
 PY3 = True if sys.version_info[0] >= 3 else False
 HEX = re.compile("^[0-9a-fA-F]$")
 BHEX = re.compile(b"^[0-9a-fA-F]$")
 
-# MARKER = "1e" # darknet
 COMPRESSED = True
 
 
@@ -99,22 +100,7 @@ def getKeys(secret, seed=None):
 	return {
 		"publicKey": hexlify(compressEcdsaPublicKey(publicKey) if COMPRESSED else publicKey),
 		"privateKey": hexlify(signingKey.to_string()),
-		"wif": getWIF(seed)
 	}
-
-
-# def getAddress(publicKey):
-# 	"""
-# 	Computes ARK address from keyring.
-
-# 	Argument:
-# 	publicKey (str) -- public key string
-
-# 	Return str
-# 	"""
-# 	ripemd160 = hashlib.new('ripemd160', unhexlify(publicKey)).digest()[:20]
-# 	seed = unhexlify(MARKER) + ripemd160
-# 	return base58.b58encode_check(seed)
 
 
 def verifySignature(value, publicKey, signature):
@@ -157,25 +143,23 @@ def verifySignatureFromBytes(data, publicKey, signature):
 ##############################
 
 def newPrivatekey(uncompressed=False):
-	return getKeys(None, hashlib.sha256(os.urandom(256)).digest())
+	return getKeys(None, hashlib.sha256(os.urandom(256)).digest())["privateKey"]
 
 
 def newSeed():
 	return hexlify(hashlib.sha256(os.urandom(256)).digest())
 
 
-# def hdPrivatekey(seed, child):
-#     masterkey = btctools.bip32_master_key(seed)
-#     childkey = btctools.bip32_ckd(masterkey, child % 100000000)  # Too large child id could cause problems
-#     key = btctools.bip32_extract_key(childkey)
-#     return btctools.encode_privkey(key, "wif")
+def hdPrivatekey(seed, child):
+    masterkey = btctools.bip32_master_key(seed)
+    childkey = btctools.bip32_ckd(masterkey, child % 100000000)  # Too large child id could cause problems
+    return getKeys(None, btctools.bip32_extract_key(childkey))["privateKey"]
 
 
 def privatekeyToAddress(privatekey):
 	try:
 		signingKey = SigningKey.from_string(unhexlify(privateKey), SECP256k1, hashlib.sha256)
-		return signingKey.get_verifying_key().to_string()
-		# return getAddress(publicKey)
+		return base58.b58encode_check(signingKey.get_verifying_key().to_string())
 	except Exception:
 		return False
 
@@ -191,9 +175,12 @@ signOld = sign
 
 
 def verify(data, address, sign): 
-	# sign is under the form (r, s) so have to put in DER form first
-	r, s = sign
-	sign = der.encode_sequence(der.encode_integer(r), der.encode_integer(s))
+	# sign is under the form (r, s) so have to put in DER format
 	# data should be a bytes
-	# address will actually be a publicKey
-	return verifySignatureFromBytes(data, address, sign)
+	# address is transformed to a publicKey using base58 decode check
+	r, s = sign
+	return verifySignatureFromBytes(
+		data if isinstance(data, bytes) else data.encode("utf-8"),
+		base58.b58decode_check(address),
+		der.encode_sequence(der.encode_integer(r), der.encode_integer(s))
+	)

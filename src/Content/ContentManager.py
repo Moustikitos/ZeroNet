@@ -681,9 +681,9 @@ class ContentManager(object):
         new_content["inner_path"] = inner_path
 
         # Verify private key
-        from Crypt import CryptBitcoin
+        from Crypt import CryptArk
         self.log.info("Verifying private key...")
-        privatekey_address = CryptBitcoin.privatekeyToAddress(privatekey)
+        privatekey_address = CryptArk.privatekeyToAddress(privatekey)
         valid_signers = self.getValidSigners(inner_path, new_content)
         if privatekey_address not in valid_signers:
             raise SignError(
@@ -695,7 +695,7 @@ class ContentManager(object):
         if inner_path == "content.json" and privatekey_address == self.site.address:
             # If signing using the root key, then sign the valid signers
             signers_data = "%s:%s" % (new_content["signs_required"], ",".join(valid_signers))
-            new_content["signers_sign"] = CryptBitcoin.sign(str(signers_data), privatekey)
+            new_content["signers_sign"] = CryptArk.sign(str(signers_data), privatekey)
             if not new_content["signers_sign"]:
                 self.log.info("Old style address, signers_sign is none")
 
@@ -707,7 +707,7 @@ class ContentManager(object):
             del(new_content["sign"])  # Delete old sign (backward compatibility)
 
         sign_content = json.dumps(new_content, sort_keys=True)
-        sign = CryptBitcoin.sign(sign_content, privatekey)
+        sign = CryptArk.sign(sign_content, privatekey)
         # new_content["signs"] = content.get("signs", {}) # TODO: Multisig
         if sign:  # If signing is successful (not an old address)
             new_content["signs"] = {}
@@ -748,7 +748,7 @@ class ContentManager(object):
         return 1  # Todo: Multisig
 
     def verifyCert(self, inner_path, content):
-        from Crypt import CryptBitcoin
+        from Crypt import CryptArk
 
         rules = self.getRules(inner_path, content)
 
@@ -774,7 +774,7 @@ class ContentManager(object):
 
         try:
             cert_subject = "%s#%s/%s" % (rules["user_address"], content["cert_auth_type"], name)
-            result = CryptBitcoin.verify(cert_subject, cert_address, content["cert_sign"])
+            result = CryptArk.verify(cert_subject, cert_address, content["cert_sign"])
         except Exception, err:
             raise VerifyError("Certificate verify error: %s" % err)
         return result
@@ -875,7 +875,7 @@ class ContentManager(object):
     # Return: None = Same as before, False = Invalid, True = Valid
     def verifyFile(self, inner_path, file, ignore_same=True):
         if inner_path.endswith("content.json"):  # content.json: Check using sign
-            from Crypt import CryptBitcoin
+            from Crypt import CryptArk
             try:
                 if type(file) is dict:
                     new_content = file
@@ -922,7 +922,7 @@ class ContentManager(object):
 
                     if inner_path == "content.json" and len(valid_signers) > 1:  # Check signers_sign on root content.json
                         signers_data = "%s:%s" % (signs_required, ",".join(valid_signers))
-                        if not CryptBitcoin.verify(signers_data, self.site.address, new_content["signers_sign"]):
+                        if not CryptArk.verify(signers_data, self.site.address, new_content["signers_sign"]):
                             raise VerifyError("Invalid signers_sign!")
 
                     if inner_path != "content.json" and not self.verifyCert(inner_path, new_content):  # Check if cert valid
@@ -931,7 +931,7 @@ class ContentManager(object):
                     valid_signs = 0
                     for address in valid_signers:
                         if address in signs:
-                            valid_signs += CryptBitcoin.verify(sign_content, address, signs[address])
+                            valid_signs += CryptArk.verify(sign_content, address, signs[address])
                         if valid_signs >= signs_required:
                             break  # Break if we has enough signs
                     if valid_signs < signs_required:
@@ -939,7 +939,7 @@ class ContentManager(object):
                     else:
                         return self.verifyContent(inner_path, new_content)
                 else:  # Old style signing
-                    if CryptBitcoin.verify(sign_content, self.site.address, sign):
+                    if CryptArk.verify(sign_content, self.site.address, sign):
                         return self.verifyContent(inner_path, new_content)
                     else:
                         raise VerifyError("Invalid old-style sign")
