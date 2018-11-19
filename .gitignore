@@ -4,6 +4,9 @@ __pycache__/
 
 # Log files
 **/*.log
+**/*.log.*
+**/*.dll
+**/*.exe
 
 # Hidden files
 .*

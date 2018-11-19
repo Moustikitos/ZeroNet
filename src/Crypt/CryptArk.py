@@ -1,3 +1,4 @@
+import os
 import re
 import sys
 import hashlib
@@ -158,14 +159,15 @@ def hdPrivatekey(seed, child):
 
 def privatekeyToAddress(privatekey):
 	try:
-		signingKey = SigningKey.from_string(unhexlify(privateKey), SECP256k1, hashlib.sha256)
-		return base58.b58encode_check(signingKey.get_verifying_key().to_string())
+		signingKey = SigningKey.from_string(unhexlify(privatekey), SECP256k1, hashlib.sha256)
+		publicKey = compressEcdsaPublicKey(signingKey.get_verifying_key().to_string())
+		return base58.b58encode_check(publicKey)
 	except Exception:
 		return False
 
 
 def sign(data, privatekey):
-	signingKey = SigningKey.from_string(unhexlify(privateKey), SECP256k1, hashlib.sha256)
+	signingKey = SigningKey.from_string(unhexlify(privatekey), SECP256k1, hashlib.sha256)
 	return hexlify(signingKey.sign_deterministic(
 		data if isinstance(data, bytes) else data.encode("utf-8"),
 		hashlib.sha256,
@@ -177,7 +179,6 @@ signOld = sign
 def verify(data, address, sign): 
 	# sign is under the form (r, s) so have to put in DER format
 	# data should be a bytes
-	# address is transformed to a publicKey using base58 decode check
 	r, s = sign
 	return verifySignatureFromBytes(
 		data if isinstance(data, bytes) else data.encode("utf-8"),

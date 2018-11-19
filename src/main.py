@@ -143,12 +143,12 @@ class Actions(object):
 
     def siteCreate(self):
         logging.info("Generating new privatekey...")
-        from Crypt import CryptBitcoin
-        privatekey = CryptBitcoin.newPrivatekey()
+        from Crypt import CryptArk
+        privatekey = CryptArk.newPrivatekey()
         logging.info("----------------------------------------------------------------------")
         logging.info("Site private key: %s" % privatekey)
         logging.info("                  !!! ^ Save it now, required to modify the site ^ !!!")
-        address = CryptBitcoin.privatekeyToAddress(privatekey)
+        address = CryptArk.privatekeyToAddress(privatekey)
         logging.info("Site address:     %s" % address)
         logging.info("----------------------------------------------------------------------")
 
@@ -393,24 +393,24 @@ class Actions(object):
 
     # Crypto commands
     def cryptPrivatekeyToAddress(self, privatekey=None):
-        from Crypt import CryptBitcoin
+        from Crypt import CryptArk
         if not privatekey:  # If no privatekey in args then ask it now
             import getpass
             privatekey = getpass.getpass("Private key (input hidden):")
 
-        print CryptBitcoin.privatekeyToAddress(privatekey)
+        print CryptArk.privatekeyToAddress(privatekey)
 
     def cryptSign(self, message, privatekey):
-        from Crypt import CryptBitcoin
-        print CryptBitcoin.sign(message, privatekey)
+        from Crypt import CryptArk
+        print CryptArk.sign(message, privatekey)
 
     def cryptVerify(self, message, sign, address):
-        from Crypt import CryptBitcoin
-        print CryptBitcoin.verify(message, address, sign)
+        from Crypt import CryptArk
+        print CryptArk.verify(message, address, sign)
 
     def cryptGetPrivatekey(self, master_seed, site_address_index=None):
-        from Crypt import CryptBitcoin
-        print CryptBitcoin.hdPrivatekey(master_seed, site_address_index)
+        from Crypt import CryptArk
+        print CryptArk.hdPrivatekey(master_seed, site_address_index)
 
     # Peer
     def peerPing(self, peer_ip, peer_port=None):
