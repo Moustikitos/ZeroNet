@@ -31,7 +31,6 @@ import SiteManager
 class Site(object):
 
     def __init__(self, address, allow_create=True, settings=None):
-        print(address, type(address))
         self.address = re.sub("[^A-Za-z0-9]", "", address)  # Make sure its correct address
         self.address_hash = hashlib.sha256(self.address).digest()
         self.address_short = "%s..%s" % (self.address[:6], self.address[-4:])  # Short address for logging

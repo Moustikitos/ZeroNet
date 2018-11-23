@@ -19,7 +19,7 @@ HEX = re.compile("^[0-9a-fA-F]$")
 BHEX = re.compile(b"^[0-9a-fA-F]$")
 
 COMPRESSED = True
-
+MARKER = "1e"
 
 def basint(e):
 	# byte as int conversion
@@ -104,6 +104,20 @@ def getKeys(secret, seed=None):
 	}
 
 
+def getAddress(publicKey):
+	"""
+	Computes ARK address from keyring.
+
+	Argument:
+	publicKey (str) -- public key string
+
+	Return str
+	"""
+	ripemd160 = hashlib.new('ripemd160', unhexlify(publicKey)).digest()[:20]
+	seed = unhexlify(MARKER) + ripemd160
+	return base58.b58encode_check(seed)
+
+
 def verifySignature(value, publicKey, signature):
 	"""
 	Verify signature.
@@ -152,16 +166,16 @@ def newSeed():
 
 
 def hdPrivatekey(seed, child):
-    masterkey = btctools.bip32_master_key(seed)
-    childkey = btctools.bip32_ckd(masterkey, child % 100000000)  # Too large child id could cause problems
-    return getKeys(None, btctools.bip32_extract_key(childkey))["privateKey"]
+	masterkey = btctools.bip32_master_key(seed)
+	childkey = btctools.bip32_ckd(masterkey, child % 100000000)  # Too large child id could cause problems
+	return getKeys(None, hashlib.sha256(unhexlify(btctools.bip32_extract_key(childkey))).digest())["privateKey"]
 
 
 def privatekeyToAddress(privatekey):
 	try:
 		signingKey = SigningKey.from_string(unhexlify(privatekey), SECP256k1, hashlib.sha256)
-		publicKey = compressEcdsaPublicKey(signingKey.get_verifying_key().to_string())
-		return base58.b58encode_check(publicKey)
+		return hexlify(compressEcdsaPublicKey(signingKey.get_verifying_key().to_string()))
+		# return base58.b58encode_check(publicKey)
 	except Exception:
 		return False
 
@@ -182,6 +196,6 @@ def verify(data, address, sign):
 	r, s = sign
 	return verifySignatureFromBytes(
 		data if isinstance(data, bytes) else data.encode("utf-8"),
-		base58.b58decode_check(address),
+		address,
 		der.encode_sequence(der.encode_integer(r), der.encode_integer(s))
 	)

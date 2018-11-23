@@ -18,8 +18,8 @@ class SiteManagerPlugin(object):
 
     def load(self, *args, **kwargs):
         super(SiteManagerPlugin, self).load(*args, **kwargs)
-        if not self.get(config.bit_resolver):
-            self.need(config.bit_resolver)  # Need ZeroName site
+        # if not self.get(config.bit_resolver):
+        #     self.need(config.bit_resolver)  # Need ZeroName site
 
     # Checks if it's a valid address
     def isAddress(self, address):

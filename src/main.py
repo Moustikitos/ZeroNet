@@ -149,7 +149,12 @@ class Actions(object):
         logging.info("Site private key: %s" % privatekey)
         logging.info("                  !!! ^ Save it now, required to modify the site ^ !!!")
         address = CryptArk.privatekeyToAddress(privatekey)
-        logging.info("Site address:     %s" % address)
+        try:
+            w_address = CryptArk.getAddress(address)
+            logging.info("Site address:     %s" % w_address)
+        except:
+            w_address = False
+            logging.info("Site address:     %s" % address)
         logging.info("----------------------------------------------------------------------")
 
         while True and not config.batch:
@@ -163,8 +168,9 @@ class Actions(object):
         from Site import SiteManager
         SiteManager.site_manager.load()
 
-        os.mkdir("%s/%s" % (config.data_dir, address))
-        open("%s/%s/index.html" % (config.data_dir, address), "w").write("Hello %s!" % address)
+        folder_name  = w_address if w_address else address
+        os.mkdir("%s/%s" % (config.data_dir, folder_name))
+        open("%s/%s/index.html" % (config.data_dir, folder_name), "w").write("Hello %s!" % address)
 
         logging.info("Creating content.json...")
         site = Site(address)
