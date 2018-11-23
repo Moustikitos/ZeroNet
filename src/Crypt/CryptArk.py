@@ -19,7 +19,7 @@ HEX = re.compile("^[0-9a-fA-F]$")
 BHEX = re.compile(b"^[0-9a-fA-F]$")
 
 COMPRESSED = True
-MARKER = "1e"
+MARKER = "17"
 
 def basint(e):
 	# byte as int conversion
@@ -168,6 +168,7 @@ def newSeed():
 def hdPrivatekey(seed, child):
 	masterkey = btctools.bip32_master_key(seed)
 	childkey = btctools.bip32_ckd(masterkey, child % 100000000)  # Too large child id could cause problems
+	# print ">>>", btctools.bip32_extract_key(childkey)
 	return getKeys(None, hashlib.sha256(unhexlify(btctools.bip32_extract_key(childkey))).digest())["privateKey"]
 
 
