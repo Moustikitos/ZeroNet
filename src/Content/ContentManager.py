@@ -677,7 +677,7 @@ class ContentManager(object):
             new_content["zeronet_version"] = config.version
             new_content["signs_required"] = content.get("signs_required", 1)
 
-        new_content["address"] = self.site.address
+        new_content["address"] = self.site.publicKey
         new_content["inner_path"] = inner_path
 
         # Verify private key
@@ -739,8 +739,8 @@ class ContentManager(object):
             if rules and "signers" in rules:
                 valid_signers += rules["signers"]
 
-        if self.site.address not in valid_signers:
-            valid_signers.append(self.site.address)  # Site address always valid
+        if self.site.publicKey not in valid_signers:
+            valid_signers.append(self.site.publicKey)  # Site address always valid
         return valid_signers
 
     # Return: The required number of valid signs for the content.json
@@ -803,8 +803,8 @@ class ContentManager(object):
         site_size_limit = self.site.getSizeLimit() * 1024 * 1024
 
         # Check site address
-        if content.get("address") and content["address"] != self.site.address:
-            raise VerifyError("Wrong site address: %s != %s" % (content["address"], self.site.address))
+        if content.get("address") and content["address"] != self.site.publicKey:
+            raise VerifyError("Wrong site address: %s != %s" % (content["address"], self.site.publicKey))
 
         # Check file inner path
         if content.get("inner_path") and content["inner_path"] != inner_path:
@@ -922,7 +922,7 @@ class ContentManager(object):
 
                     if inner_path == "content.json" and len(valid_signers) > 1:  # Check signers_sign on root content.json
                         signers_data = "%s:%s" % (signs_required, ",".join(valid_signers))
-                        if not CryptArk.verify(signers_data, self.site.address, new_content["signers_sign"]):
+                        if not CryptArk.verify(signers_data, self.site.publicKey, new_content["signers_sign"]):
                             raise VerifyError("Invalid signers_sign!")
 
                     if inner_path != "content.json" and not self.verifyCert(inner_path, new_content):  # Check if cert valid
@@ -939,7 +939,7 @@ class ContentManager(object):
                     else:
                         return self.verifyContent(inner_path, new_content)
                 else:  # Old style signing
-                    if CryptArk.verify(sign_content, self.site.address, sign):
+                    if CryptArk.verify(sign_content, self.site.publicKey, sign):
                         return self.verifyContent(inner_path, new_content)
                     else:
                         raise VerifyError("Invalid old-style sign")

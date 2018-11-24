@@ -115,6 +115,7 @@ class Config(object):
 
         # SiteCreate
         action = self.subparsers.add_parser("siteCreate", help='Create a new site')
+        action.add_argument("--passphrase", help='Manually give passphrase', default=False, action="store_true")
 
         # SiteNeedFile
         action = self.subparsers.add_parser("siteNeedFile", help='Get a file from site')
@@ -129,6 +130,7 @@ class Config(object):
         action = self.subparsers.add_parser("siteSign", help='Update and sign content.json: address [privatekey]')
         action.add_argument('address', help='Site to sign')
         action.add_argument('privatekey', help='Private key (default: ask on execute)', nargs='?')
+        action.add_argument("--passphrase", help='Manually give passphrase', default=False, action="store_true")
         action.add_argument('--inner_path', help='File you want to sign (default: content.json)',
                             default="content.json", metavar="inner_path")
         action.add_argument('--remove_missing_optional', help='Remove optional files that is not present in the directory', action='store_true')
@@ -184,12 +186,12 @@ class Config(object):
         action.add_argument('parameters', help='Parameters to command', nargs='?')
 
         # CryptSign
-        action = self.subparsers.add_parser("cryptSign", help='Sign message using Bitcoin private key')
+        action = self.subparsers.add_parser("cryptSign", help='Sign message using Ark private key')
         action.add_argument('message', help='Message to sign')
         action.add_argument('privatekey', help='Private key')
 
         # Crypt Verify
-        action = self.subparsers.add_parser("cryptVerify", help='Verify message using Bitcoin public address')
+        action = self.subparsers.add_parser("cryptVerify", help='Verify message using Ark public address')
         action.add_argument('message', help='Message to verify')
         action.add_argument('sign', help='Signiture for message')
         action.add_argument('address', help='Signer\'s address')

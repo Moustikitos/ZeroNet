@@ -3,6 +3,7 @@ import os
 import sys
 import stat
 import time
+import hashlib
 import logging
 
 # Third party modules
@@ -108,16 +109,7 @@ elif config.bind:
 	helper.socketBindMonkeyPatch(*bind.split(":"))
 
 # -- Actions --
-
-import io, json
-def getPublicKey(address):
-	if os.path.exists(os.path.join(config.data_dir, address)):
-		with io.open(os.path.join(config.data_dir, address, "content.json")) as content:
-			data = json.load(content)
-		return str(data.get("address", address))
-	else:
-		return address
-
+from Site.SiteManager import getPublicKey
 
 @PluginManager.acceptPlugins
 class Actions(object):
@@ -150,20 +142,21 @@ class Actions(object):
 
 	# Site commands
 
-	def siteCreate(self):
+	def siteCreate(self, passphrase=False):
 		logging.info("Generating new privatekey...")
 		from Crypt import CryptArk
-		privatekey = CryptArk.newPrivatekey()
+		if passphrase:
+			import getpass
+			passphrase = getpass.getpass("Type your passphrase (input hidden): ")
+			privatekey = hashlib.sha256(passphrase if isinstance(passphrase, bytes) else passphrase.encode("utf-8")).hexdigest()
+		else:
+			privatekey = CryptArk.newPrivatekey()
 		logging.info("----------------------------------------------------------------------")
 		logging.info("Site private key: %s" % privatekey)
 		logging.info("                  !!! ^ Save it now, required to modify the site ^ !!!")
 		address = CryptArk.privatekeyToAddress(privatekey)
-		try:
-			w_address = CryptArk.getAddress(address)
-			logging.info("Site address:     %s" % w_address)
-		except:
-			w_address = False
-			logging.info("Site address:     %s" % address)
+		w_address = CryptArk.getAddress(address)
+		logging.info("Site address:     %s" % w_address)
 		logging.info("----------------------------------------------------------------------")
 
 		while True and not config.batch:
@@ -177,19 +170,20 @@ class Actions(object):
 		from Site import SiteManager
 		SiteManager.site_manager.load()
 
-		folder_name  = w_address if w_address else address
+		folder_name  = w_address
 		os.mkdir("%s/%s" % (config.data_dir, folder_name))
 		open("%s/%s/index.html" % (config.data_dir, folder_name), "w").write("Hello %s!" % address)
 
 		logging.info("Creating content.json...")
-		site = Site(address)
+		site = Site(w_address, public_key=address)
+
 		site.content_manager.sign(privatekey=privatekey, extend={"postmessage_nonce_security": True})
 		site.settings["own"] = True
 		site.saveSettings()
 
 		logging.info("Site created!")
 
-	def siteSign(self, address, privatekey=None, inner_path="content.json", publish=False, remove_missing_optional=False):
+	def siteSign(self, address, privatekey=None, passphrase=False, inner_path="content.json", publish=False, remove_missing_optional=False):
 		from Site import Site
 		from Site import SiteManager
 		from Debug import Debug
@@ -198,7 +192,11 @@ class Actions(object):
 		logging.info("Signing site: %s..." % address)
 		site = Site(address, allow_create=False)
 
-		if not privatekey:  # If no privatekey defined
+		if passphrase:
+			import getpass
+			passphrase = getpass.getpass("Type your passphrase (input hidden): ")
+			privatekey = hashlib.sha256(passphrase if isinstance(passphrase, bytes) else passphrase.encode("utf-8")).hexdigest()
+		elif not privatekey:  # If no privatekey defined
 			from User import UserManager
 			user = UserManager.user_manager.get()
 			if user:
@@ -225,7 +223,8 @@ class Actions(object):
 		SiteManager.site_manager.load()
 
 		s = time.time()
-		address = getPublicKey(address)
+		# ark_address = address[:]
+		# address = getPublicKey(address)
 		logging.info("Verifing site: %s..." % address)
 		site = Site(address)
 		bad_files = []
@@ -379,7 +378,6 @@ class Actions(object):
 		from File import FileServer  # We need fileserver to handle incoming file requests
 		from Peer import Peer
 		file_server = FileServer()
-		address = getPublicKey(address)
 		site = SiteManager.site_manager.get(address)
 		logging.info("Loading site...")
 		site.settings["serving"] = True  # Serving the site even if its disabled

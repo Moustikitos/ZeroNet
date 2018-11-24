@@ -14,13 +14,25 @@ from Crypt import CryptArk
 from util import helper
 
 
+
+import io, json
+def getPublicKey(address):
+	content_path = os.path.join(config.data_dir, address, "content.json")
+	if os.path.exists(content_path):
+		with io.open(content_path) as content:
+			data = json.load(content)
+		return str(data.get("address", address))
+	else:
+		return address
+
+
 @PluginManager.acceptPlugins
 class SiteManager(object):
 	def __init__(self):
 		self.log = logging.getLogger("SiteManager")
 		self.log.debug("SiteManager created.")
 		self.sites = {}
-		self.addr2pubk = {}
+		# self.addr2pubk = {}
 		self.sites_changed = int(time.time())
 		self.loaded = False
 		gevent.spawn(self.saveTimer)
@@ -36,12 +48,7 @@ class SiteManager(object):
 		# Load new adresses
 		for address, settings in json.load(open("%s/sites.json" % config.data_dir)).iteritems():
 			if address not in self.sites:
-				try:
-					w_address = CryptArk.getAddress(address)
-					self.addr2pubk[w_address] = address
-				except:
-					w_address = False
-				if os.path.isfile("%s/%s/content.json" % (config.data_dir, w_address if w_address else address)):
+				if os.path.isfile("%s/%s/content.json" % (config.data_dir, address)):
 					# Root content.json exists, try load site
 					s = time.time()
 					try:
@@ -127,7 +134,7 @@ class SiteManager(object):
 
 	# Checks if its a valid address
 	def isAddress(self, address):
-		return re.match("^[A-Za-z0-9]{26,35}$", address)
+		return re.match("^[A-Za-z0-9]{20,35}$", address)
 
 	def isDomain(self, address):
 		return False
@@ -137,7 +144,8 @@ class SiteManager(object):
 		if not self.loaded:  # Not loaded yet
 			self.log.debug("Loading site: %s)..." % address)
 			self.load()
-		return self.sites.get(self.addr2pubk.get(address, address))
+		return self.sites.get(address)
+		# return self.sites.get(self.addr2pubk.get(address, address))
 
 	# Return or create site and start download site files
 	def need(self, address, all_file=True, settings=None):
@@ -152,14 +160,11 @@ class SiteManager(object):
 
 			if not self.isAddress(address):
 				return False  # Not address: %s % address
+				
 			self.log.debug("Added new site: %s" % address)
 			config.loadTrackersFile()
 			site = Site(address, settings=settings)
 			self.sites[address] = site
-			try:
-				self.addr2pubk[CryptArk.getAddress(address)] = address
-			except:
-				pass
 			if not site.settings["serving"]:  # Maybe it was deleted before
 				site.settings["serving"] = True
 			site.saveSettings()

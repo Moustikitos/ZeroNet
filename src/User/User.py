@@ -57,6 +57,8 @@ class User(object):
     @util.Noparallel()
     def generateAuthAddress(self, address):
         s = time.time()
+        try: address = CryptArk.getAddress(address)
+        except: pass
         address_id = self.getAddressAuthIndex(address)  # Convert site address to int
         auth_privatekey = CryptArk.hdPrivatekey(self.master_seed, address_id)
         self.sites[address] = {
@@ -70,6 +72,8 @@ class User(object):
     # Get user site data
     # Return: {"auth_address": "xxx", "auth_privatekey": "xxx"}
     def getSiteData(self, address, create=True):
+        try: address = CryptArk.getAddress(address)
+        except: pass
         if address not in self.sites:  # Generate new BIP32 child key based on site address
             if not create:
                 return {"auth_address": None, "auth_privatekey": None}  # Dont create user yet
@@ -77,12 +81,16 @@ class User(object):
         return self.sites[address]
 
     def deleteSiteData(self, address):
+        try: address = CryptArk.getAddress(address)
+        except: pass
         if address in self.sites:
             del(self.sites[address])
             self.saveDelayed()
             self.log.debug("Deleted site: %s" % address)
 
     def setSiteSettings(self, address, settings):
+        try: address = CryptArk.getAddress(address)
+        except: pass
         site_data = self.getSiteData(address)
         site_data["settings"] = settings
         self.saveDelayed()
@@ -106,6 +114,8 @@ class User(object):
     # Get BIP32 address from site address
     # Return: BIP32 auth address
     def getAuthAddress(self, address, create=True):
+        try: address = CryptArk.getAddress(address)
+        except: pass
         cert = self.getCert(address)
         if cert:
             return cert["auth_address"]
@@ -113,6 +123,8 @@ class User(object):
             return self.getSiteData(address, create)["auth_address"]
 
     def getAuthPrivatekey(self, address, create=True):
+        try: address = CryptArk.getAddress(address)
+        except: pass
         cert = self.getCert(address)
         if cert:
             return cert["auth_privatekey"]
@@ -121,6 +133,8 @@ class User(object):
 
     # Add cert for the user
     def addCert(self, auth_address, domain, auth_type, auth_user_name, cert_sign):
+        try: address = CryptArk.getAddress(address)
+        except: pass
         # Find privatekey by auth address
         auth_privatekey = [site["auth_privatekey"] for site in self.sites.values() if site["auth_address"] == auth_address][0]
         cert_node = {
@@ -146,6 +160,8 @@ class User(object):
 
     # Set active cert for a site
     def setCert(self, address, domain):
+        try: address = CryptArk.getAddress(address)
+        except: pass
         site_data = self.getSiteData(address)
         if domain:
             site_data["cert"] = domain
@@ -158,6 +174,8 @@ class User(object):
     # Get cert for the site address
     # Return: { "auth_address":.., "auth_privatekey":.., "auth_type": "web", "auth_user_name": "nofish", "cert_sign":.. } or None
     def getCert(self, address):
+        try: address = CryptArk.getAddress(address)
+        except: pass
         site_data = self.getSiteData(address, create=False)
         if not site_data or "cert" not in site_data:
             return None  # Site dont have cert
@@ -166,6 +184,8 @@ class User(object):
     # Get cert user name for the site address
     # Return: user@certprovider.bit or None
     def getCertUserId(self, address):
+        try: address = CryptArk.getAddress(address)
+        except: pass
         site_data = self.getSiteData(address, create=False)
         if not site_data or "cert" not in site_data:
             return None  # Site dont have cert
